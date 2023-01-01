@@ -32,7 +32,7 @@ def main():
     plt.savefig("salary_over_time.png")
 
     # now try and simulate the growth of an investment account
-    account_value = test_account.simulate([0.03, 0.05], 1, 1, jake.retirement_age-jake.age+1)
+    account_value = test_account.simulate([0.03, 0.05], 0.03, 0.01, jake.retirement_age-jake.age+1)
     plt.figure()
     plt.plot(age_range, account_value)
     plt.title("Investment Account Value Over Time")
