@@ -9,7 +9,7 @@ import numpy as np
 
 def main():
     print("Hello World!")
-    test_account = investment_account("401K", 1000)
+    test_account = investment_account("Roth IRA", 26658.70)
     jake = User("Jake", 26, 55)
 
     jake.set_salary(84000)
@@ -32,7 +32,8 @@ def main():
     plt.savefig("salary_over_time.png")
 
     # now try and simulate the growth of an investment account
-    account_value = test_account.simulate([0.03, 0.05], 0.03, 0.01, jake.retirement_age-jake.age+1)
+    principal_update_by_year = 6500*np.ones((jake.retirement_age-jake.age,1))
+    account_value = test_account.simulate(principal_update_by_year, [0.03, 0.05], [0.08, 0.03], [0.02, 0.005], jake.retirement_age-jake.age+1)
     plt.figure()
     plt.plot(age_range, account_value)
     plt.title("Investment Account Value Over Time")
