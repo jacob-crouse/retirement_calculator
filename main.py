@@ -10,7 +10,8 @@ import numpy as np
 def main():
     print("Hello World!")
     test_account = investment_account("Roth IRA", 26658.70)
-    jake = User("Jake", 26, 55)
+    jake = User("Jake", 26, "male", 55)
+    jake.calculate_death_age()
 
     jake.set_salary(84000)
 
