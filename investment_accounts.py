@@ -9,28 +9,52 @@ class investment_account:
         self.principal = principal
         print("Initialized investment account named " + self.name )
 
-    def simulate(self, principal_update, return_range, means, std_devs, sim_length):
+    def simulate_growth(self, user, principal_update, means, std_devs):
         # the goal here is to implement monte carlo simulations eventually, but to get this running I just want to plug in some pretty simple exponential growth
+        
+        # start by calculating the simulation length, which should run until the user dies
+        sim_length = user.death_age - user.age + 1
+        accumulate_wealth_duration = user.retirement_age - user.age + 1
+        withdraw_wealth_duration = user.death_age - user.retirement_age + 1
 
         # assume the return range is normally distributed about the mean with given std_dev
         means_by_year, std_devs_by_year = self.model_progressive_conservatism(means, std_devs, sim_length)
         return_by_year = np.zeros((sim_length,1))
         for index in range(0, sim_length):
             return_by_year[index] = np.random.normal(means_by_year[index], std_devs_by_year[index],1)
-        plt.figure()
-        plt.plot(np.arange(26,56,1), return_by_year)
-        plt.title("Investment Account Yearly Return Over Time")
-        plt.savefig("account_return_over_time.png")
 
-        # just working with the minimum return range now, and I'll assume it's compounded continuously (most optimal)
-        account_value = np.zeros((sim_length,1))
+        # just working with the minimum return range now, and I'll assume it's compounded yearly
+        self.account_value = np.zeros((sim_length,1))
         for index in range(0, sim_length):
             if index == 0:
-                account_value[index] = self.principal
-            else:
-                account_value[index] = principal_update[index-1] + account_value[index-1] * (1 + return_by_year[index])
+                self.account_value[index] = self.principal
+            else: # account is simulated until death, but the values will be updated depending on withdrawls 
+                self.account_value[index] = principal_update[index-1] + self.account_value[index-1] * (1 + return_by_year[index])
 
-        return account_value
+            #else: # we are withdrawing from the account at thsi point
+            #    self.account_value[index] = -user.salary + self.account_value[index-1] * (1 + return_by_year[index])
+            #    if(self.account_value[index] <= 0):
+            #        self.account_value[index] = 0
+
+        # plot results for fun
+        plt.figure()
+        plt.plot(np.arange(user.age,user.death_age+1,1), return_by_year)
+        plt.title("Investment Account Yearly Return Over Time")
+        plt.savefig(self.name + "_account_return_over_time.png")
+
+        return self.account_value
+
+    def simulate_decay(self, user, accounts, percentage_of_final_salary):
+        # the previous method simulates the growth of an investment account while the principal contribution is being continuously updated. This method will show what happens once the account decays
+
+        # for now, I'll assume it's most optimal to draw from the smallest accounts first, since they will make less returns by year than the larger accounts
+        num_accounts = len(accounts)
+        account_values_at_retirement = np.zeros((num_accounts, 1))
+        counter = 0
+        for account in accounts:
+            account_values_at_retirement[counter] = account.account_value[-1]
+            print("Account " + account.name + " value at retirement: " + str(account_values_at_retirement[counter]))
+            counter += 1
 
     def model_progressive_conservatism(self, means, std_devs, sim_length):
         # I want something that will show that early in life we'll be more aggressive with our investments, so we get higher average return, but with larger standard deviations. As we get older, our investment straegy becomes more conservative, so our means and standard deviations become smaller
