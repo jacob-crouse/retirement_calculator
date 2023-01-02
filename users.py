@@ -3,6 +3,8 @@ import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
+from investment_accounts import investment_account
+
 class User:
 
     #self.retirement_age = 67 # normally need to be 67 to collect full social security, so lets go with that
@@ -82,3 +84,48 @@ class User:
         out_std_devs = a * np.log(b * np.arange(1,sim_length+1)) 
 
         return out_means, out_std_devs
+
+    def simulate_decay(self, accounts, percentage_of_final_salary):
+        # the previous method simulates the growth of an investment account while the principal contribution is being continuously updated. This method will show what happens once the account decays
+
+        # for now, I'll assume it's most optimal to draw from the smallest accounts first, since they will make less returns by year than the larger accounts
+        num_accounts = len(accounts)
+        account_values_at_retirement = np.zeros((num_accounts, 1))
+        counter = 0
+        for account in accounts:
+            account_values_at_retirement[counter] = account.account_value[self.accumulate_wealth_duration]
+            print("Account " + account.name + " value at retirement: " + str(account_values_at_retirement[counter]))
+            counter += 1
+        
+        # with the account values at retirement known, I'll sort them into the order from which I'll withdraw them (ascending order)
+        temp = sorted(zip(account_values_at_retirement, accounts))
+        account_withdrawl_order = [x for y, x in temp]
+
+        # with the accounts sorted, I'm going to start withdrawing from one account until it hits zero. I will take note of this age, and continue withdrawing from the next account. Repeat for all accounts until all accounts are exhausted
+        withdrawl_age = self.accumulate_wealth_duration
+        counter = 0
+        for account in account_withdrawl_order:
+            principal_update = (-percentage_of_final_salary * self.salary_by_year[-1]) * np.ones((self.withdraw_wealth_duration-counter, 1))
+            new_account = investment_account(account.name, account.account_value[self.accumulate_wealth_duration+counter])
+
+            # I'll need to re-simulate the account after the point where we start to withdraw from it
+            new_account.simulate_growth(self, principal_update, [0,0], [0,0], self.withdraw_wealth_duration-counter, account.return_by_year)
+
+            # update the account I've remodeled to reflect this withdrawl behavior
+            account.account_value = np.delete(account.account_value, range(-self.withdraw_wealth_duration+counter, 0))
+            account.account_value = account.account_value.reshape((len(account.account_value),1))
+            print(account.account_value.shape)
+            #print(account.account_value)
+            #print(new_account.account_value)
+            print(new_account.account_value.shape)
+            account.account_value = np.vstack((account.account_value, new_account.account_value))
+            empty_index = np.where(new_account.account_value == 0)
+            counter += int(empty_index[0][0])
+            print(counter)
+
+            # print the results to make sure it's working
+            plt.figure()
+            plt.grid(True)
+            plt.plot(np.arange(self.age, self.death_age+1, 1), account.account_value)
+            plt.title("Updated " + account.name + " with Withdrawls Added")
+            plt.savefig("withdrawn_" + account.name + "_over_time.png")
