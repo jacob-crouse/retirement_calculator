@@ -8,11 +8,15 @@ import numpy as np
 
 
 def main():
-    print("Hello World!")
-    jake = User("Jake", 26, "male", 65)
+    jake = User("Jake", 26, "male", 55)
     test_account = investment_account("Roth IRA", 26658.70)
     test_account2 = investment_account("401K", 15063.55)
     test_account3 = investment_account("Roth IRA 2", 26658.70)
+
+    # try defining a Ball Pension
+    test_account4 = investment_account("Jake Pension", 20000, "Ball Pension")
+    test_account4.declare_ball_pension(24)
+
 
     #jake.calculate_death_age()
     jake.set_death_age(95)
@@ -22,10 +26,11 @@ def main():
 
     # now try and simulate the growth of some investment accounts
     principal_update_by_year = np.vstack((6500*np.ones((jake.accumulate_wealth_duration,1)), np.zeros((jake.withdraw_wealth_duration, 1))))
-    principal_update_by_year2 = np.vstack((0.07*jake.salary_by_year, np.zeros((jake.withdraw_wealth_duration,1))))
+    principal_update_by_year2 = np.vstack((0.08*jake.salary_by_year, np.zeros((jake.withdraw_wealth_duration,1))))
     account_value = test_account.simulate_growth(jake, principal_update_by_year, [0.08, 0.03], [0.02, 0.005], jake.sim_length)
     account_value2 = test_account2.simulate_growth(jake, principal_update_by_year2, [0.08, 0.03], [0.02, 0.005], jake.sim_length)
     account_value3 = test_account3.simulate_growth(jake, principal_update_by_year, [0.08, 0.03], [0.02, 0.005], jake.sim_length)
+    account_value4 = test_account4.simulate_growth(jake, principal_update_by_year, [0, 0], [0, 0], jake.sim_length)
 
     jake.simulate_decay([test_account, test_account2, test_account3], 0.9)
 

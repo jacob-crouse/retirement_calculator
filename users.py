@@ -29,7 +29,7 @@ class User:
     def set_gender(self, gender):
         self.gender = gender
 
-    def calculate_death_age(self, ):
+    def calculate_death_age(self):
         with open('actuarial_tables_2019_2022.csv', newline='') as csvfile:
             self.actuarial_table = list(csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC))
             running_sum = 0
