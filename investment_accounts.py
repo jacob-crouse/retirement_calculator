@@ -40,33 +40,42 @@ class investment_account:
                         self.account_value[index] = 0
         elif self.type == "Ball Pension":
             # Ball pensions don't accumulate interest -- you just earn a specific amount of money per year
-            years_already_there = user.age - self.starting_age
-            self.account_value[0] = self.principal
-            for index in range(1,num_sim_years):
-                if index < user.accumulate_wealth_duration:
-                    if (index + years_already_there) < 10:
-                        self.account_value[index] = self.account_value[index-1] + (user.salary_by_year[index] * 0.115) + 0.05*(user.salary_by_year[index] - 0.5*self.extrapolate_ss_base_wage(user, user.age+index))
-                    elif (index + years_already_there) < 20:
-                        self.account_value[index] = self.account_value[index-1] + (user.salary_by_year[index] * 0.13) + 0.05*(user.salary_by_year[index] - 0.5*self.extrapolate_ss_base_wage(user, user.age+index))
-                    elif (index + years_already_there) >= 20:
-                        self.account_value[index] = self.account_value[index-1] + (user.salary_by_year[index] * 0.15) + 0.05*(user.salary_by_year[index] - 0.5*self.extrapolate_ss_base_wage(user, user.age+index))
+            if num_sim_years == user.sim_length: # this is the first simulation of this account, so treat it as normal
+                years_already_there = user.age - self.starting_age
+                self.account_value[0] = self.principal
+                for index in range(1,num_sim_years):
+                    if index < user.accumulate_wealth_duration:
+                        if (index + years_already_there) < 10:
+                            self.account_value[index] = self.account_value[index-1] + (user.salary_by_year[index] * 0.115) + 0.05*(user.salary_by_year[index] - 0.5*self.extrapolate_ss_base_wage(user, user.age+index))
+                        elif (index + years_already_there) < 20:
+                            self.account_value[index] = self.account_value[index-1] + (user.salary_by_year[index] * 0.13) + 0.05*(user.salary_by_year[index] - 0.5*self.extrapolate_ss_base_wage(user, user.age+index))
+                        elif (index + years_already_there) >= 20:
+                            self.account_value[index] = self.account_value[index-1] + (user.salary_by_year[index] * 0.15) + 0.05*(user.salary_by_year[index] - 0.5*self.extrapolate_ss_base_wage(user, user.age+index))
 
-                else: # doesn't accumulate value after retirement
-                    if index == user.accumulate_wealth_duration: # if the user is <65 years old at retirement, we need to reduce the value of the pension account
-                        retirement_age = user.age + index
-                        if retirement_age < 65: # this is considered an early retirement -- you will get a reduced lump sum value
-                            with open('Ball_Early_Retirement_Scale_Factors.csv', newline='') as csvfile:
-                                ball_early_retirement_scale_factors = list(csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC))
-                                self.account_value[index] = self.account_value[index-1] * float(ball_early_retirement_scale_factors[0][retirement_age-55])
-                    else:
-                        self.account_value[index] = self.account_value[index-1]
+                    else: # doesn't accumulate value after retirement
+                        if index == user.accumulate_wealth_duration: # if the user is <65 years old at retirement, we need to reduce the value of the pension account
+                            retirement_age = user.age + index
+                            if retirement_age < 65: # this is considered an early retirement -- you will get a reduced lump sum value
+                                with open('Ball_Early_Retirement_Scale_Factors.csv', newline='') as csvfile:
+                                    ball_early_retirement_scale_factors = list(csv.reader(csvfile, delimiter=',', quoting=csv.QUOTE_NONNUMERIC))
+                                    self.account_value[index] = self.account_value[index-1] * float(ball_early_retirement_scale_factors[0][retirement_age-55])
+                        else:
+                            self.account_value[index] = self.account_value[index-1]
+
+            else: # this is us withdrawing from the account
+                # when withdrawing from the account, we don't need to simulate any growth because we're retired, so just update the principal
+                self.account_value[0] = self.principal
+                for index in range(1,num_sim_years):
+                    self.account_value[index] = self.account_value[index-1] + principal_update[0]
+                    if self.account_value[index] <= 0: # we don't have any more money, so need to stop the simulation
+                        self.account_value[index] = 0
             
             # plot things to make sure they're working properly
-            plt.figure()
-            plt.grid(True)
-            plt.plot(np.arange(user.age,user.death_age+1,1), self.account_value)
-            plt.title("Ball Pension Yearly Account Value")
-            plt.savefig("ball_pension_value_over_time.png")
+            #plt.figure()
+            #plt.grid(True)
+            #plt.plot(np.arange(user.age,user.death_age+1,1), self.account_value)
+            #plt.title("Ball Pension Yearly Account Value")
+            #plt.savefig("ball_pension_value_over_time.png")
             
 
         # plot results for fun

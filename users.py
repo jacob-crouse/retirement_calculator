@@ -94,9 +94,12 @@ class User:
         counter = 0
         for account in accounts:
             account_values_at_retirement[counter] = account.account_value[self.accumulate_wealth_duration]
+            if account.type == "Ball Pension": # Pensions don't accumulate after retirement, so withdraw from them first
+                account_values_at_retirement[counter] = 0 # make sure this is withdrawn from first
+
             print("Account " + account.name + " value at retirement: " + str(account_values_at_retirement[counter]))
             counter += 1
-        
+
         # with the account values at retirement known, I'll sort them into the order from which I'll withdraw them (ascending order)
         temp = sorted(zip(account_values_at_retirement, accounts))
         account_withdrawl_order = [x for y, x in temp]
@@ -105,8 +108,17 @@ class User:
         withdrawl_age = self.accumulate_wealth_duration
         counter = 0
         for account in account_withdrawl_order:
-            principal_update = (-percentage_of_final_salary * self.salary_by_year[-1]) * np.ones((self.withdraw_wealth_duration-counter, 1))
-            new_account = investment_account(account.name, account.account_value[self.accumulate_wealth_duration+counter])
+            # need to handle the scenario where we die before we run out of money
+            if counter < self.withdraw_wealth_duration:
+                principal_update = (-percentage_of_final_salary * self.salary_by_year[-1]) * np.ones((self.withdraw_wealth_duration-counter, 1))
+            else: # we died before we ran out of money, so stop withdrawing from accounts
+                principal_update = 0 * np.ones((self.withdraw_wealth_duration-counter, 1))
+
+            if account.type == "generic":
+                new_account = investment_account(account.name, account.account_value[self.accumulate_wealth_duration+counter])
+            elif account.type == "Ball Pension":
+                new_account = investment_account(account.name, account.account_value[self.accumulate_wealth_duration+counter], "Ball Pension")
+
 
             # I'll need to re-simulate the account after the point where we start to withdraw from it
             new_account.simulate_growth(self, principal_update, [0,0], [0,0], self.withdraw_wealth_duration-counter, account.return_by_year)
@@ -114,14 +126,12 @@ class User:
             # update the account I've remodeled to reflect this withdrawl behavior
             account.account_value = np.delete(account.account_value, range(-self.withdraw_wealth_duration+counter, 0))
             account.account_value = account.account_value.reshape((len(account.account_value),1))
-            print(account.account_value.shape)
-            #print(account.account_value)
-            #print(new_account.account_value)
-            print(new_account.account_value.shape)
             account.account_value = np.vstack((account.account_value, new_account.account_value))
             empty_index = np.where(new_account.account_value == 0)
-            counter += int(empty_index[0][0])
-            print(counter)
+            if len(empty_index[0]) != 0:
+                counter += int(empty_index[0][0])
+            else:
+                counter += 0
 
             # print the results to make sure it's working
             plt.figure()
